@@ -13,6 +13,7 @@ import {
   View,
   Button,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import MindWaveMobile from 'react-native-mindwave-mobile';
 
@@ -22,6 +23,8 @@ const instructions = Platform.select({
   android: 'Double tap R on your keyboard to reload,\n' +
     'Shake or press menu button for dev menu',
 });
+
+const isMock = true;
 
 export default class App extends Component {
   state = {
@@ -52,27 +55,38 @@ export default class App extends Component {
   render() {
     return (
       <View style={styles.container}>
-        <Button onPress={this.handlePressScan} >Scan</Button>
-        <ScrollView style={{ flex: 1 }} >
-          <View style={styles.list}>
+        <View style={styles.block} >
+          <Button onPress={this.handlePressScan} title="掃描" ></Button>
+        </View>
+        <View style={styles.block} >
+          <Text style={styles.title} >裝置列表</Text>
+          <ScrollView style={styles.deviceList} >
             {
-              this.state.devices.map(device => {
-                return <TouchableOpacity onPress={() => this.handlePressConnectDevice(device)} >
-                  <Text style={{ padding: 10 }}>
-                    {`裝置 ${device.id} ${this.state.connected === device.id ? 'connected' : null}`}
+              this.state.devices.map((device, index) => {
+                return <TouchableOpacity key={index} style={styles.deviceItem} onPress={() => this.state.connected ? this.handlePressDisconnectDevice() : this.handlePressConnectDevice(device)} >
+                  <Text style={styles.deviceItemTitle} >
+                    {`裝置 ${device.id} ${this.state.connected === device.id ? '[已連結]' : ''}`}
                   </Text>
                 </TouchableOpacity>
               })
             }
-          </View>
-        </ScrollView>
+          </ScrollView>
+        </View>
       </View>
     );
   }
 
   handlePressScan = () => {
     if (!this.state.isScanning) {
-      this.mwm.scan();
+      if (isMock) {
+        setTimeout(() => {
+          this.handleFoundDevice({
+            id: 'test1234',
+          });
+        }, 1000);
+      } else {
+        this.mwm.scan();
+      }
       this.setState({
         isScanning: true,
       });
@@ -81,6 +95,9 @@ export default class App extends Component {
 
   handlePressConnectDevice = (device) => {
     this.willConnectDevice = device;
+    if (isMock) {
+      this.handleConnect({ success: true });
+    }
   }
 
   handlePressDisconnectDevice = () => {
@@ -88,11 +105,15 @@ export default class App extends Component {
       console.log('no connecting device');
       return ;
     }
-    this.mwm.disconnect();
+    if (isMock) {
+      this.handleDisconnect({ success: true });
+    } else {
+      this.mwm.disconnect();
+    }
   }
 
   handleConnect = ({ success }) => {
-    alert('Connect ' + success ? 'success' : 'fail');
+    alert(`Connect ${success ? 'success' : 'fail'}`);
     if (this.willConnectDevice) {
       this.changeConnectedState(this.willConnectDevice.id, true);
     } else {
@@ -101,7 +122,7 @@ export default class App extends Component {
   }
 
   handleDisconnect = ({ success }) => {
-    alert('Disconnect ' + success ? 'success' : 'fail');
+    alert(`Disconnect ${success ? 'success' : 'fail'}`);
     if (!this.state.connected) {
       console.log('no connecting device');
       return ;
@@ -177,18 +198,26 @@ export default class App extends Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: '#F5FCFF',
   },
-  welcome: {
-    fontSize: 20,
-    textAlign: 'center',
-    margin: 10,
+  block: {
+    flex: 1,
+    padding: 10,
   },
-  instructions: {
-    textAlign: 'center',
-    color: '#333333',
-    marginBottom: 5,
+  title: {
+    fontSize: 20,
+  },
+  deviceList: {
+    flex: 1,
+    paddingTop: 10,
+    paddingRight: 5,
+    paddingLeft: 5,
+  },
+  deviceItem: {
+    borderWidth: 1,
+    borderColor: 'black',
+  },
+  deviceItemTitle: {
+    padding: 10,
   },
 });
