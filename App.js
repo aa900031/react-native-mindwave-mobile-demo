@@ -30,9 +30,9 @@ export default class App extends Component {
   state = {
     devices: [],
     connected: null,
-    isScanning: false
+    isScanning: false,
+    willConnect: null,
   }
-  willConnectDevice = null
 
   componentDidMount() {
     this.mwm = new MindWaveMobile();
@@ -63,10 +63,10 @@ export default class App extends Component {
           <ScrollView style={styles.deviceList} >
             {
               this.state.devices.map((device, index) => {
-                return <TouchableOpacity key={index} style={styles.deviceItem} onPress={() => this.state.connected ? this.handlePressDisconnectDevice() : this.handlePressConnectDevice(device)} >
-                  <Text style={styles.deviceItemTitle} >
-                    {`裝置 ${device.id} ${this.state.connected === device.id ? '[已連結]' : ''}`}
-                  </Text>
+                const handlePress = () => this.state.connected ? this.handlePressDisconnectDevice() : this.handlePressConnectDevice(device);
+                const message = `裝置 ${device.id} ${this.state.willConnect === device.id ? '[正在連結]' : this.state.connected === device.id ? '[已連結]' : ''}`
+                return <TouchableOpacity key={index} style={styles.deviceItem} onPress={handlePress} >
+                  <Text style={styles.deviceItemTitle} >{message}</Text>
                 </TouchableOpacity>
               })
             }
@@ -94,9 +94,17 @@ export default class App extends Component {
   }
 
   handlePressConnectDevice = (device) => {
-    this.willConnectDevice = device;
+    if (!device.id) {
+      console.error('can not connect no id device');
+      return ;
+    }
+    this.setState({
+      willConnect: device.id,
+    });
     if (isMock) {
-      this.handleConnect({ success: true });
+      setTimeout(() => {
+        this.handleConnect({ success: true });
+      }, 2000);
     }
   }
 
@@ -113,16 +121,16 @@ export default class App extends Component {
   }
 
   handleConnect = ({ success }) => {
-    alert(`Connect ${success ? 'success' : 'fail'}`);
-    if (this.willConnectDevice) {
-      this.changeConnectedState(this.willConnectDevice.id, true);
+    alert(`連結 ${success ? '成功' : '失敗'}`);
+    if (this.state.willConnect) {
+      this.changeConnectedState(this.state.willConnect, true);
     } else {
       console.log('will connect device is null');
     }
   }
 
   handleDisconnect = ({ success }) => {
-    alert(`Disconnect ${success ? 'success' : 'fail'}`);
+    alert(`移除連結 ${success ? '成功' : '失敗'}`);
     if (!this.state.connected) {
       console.log('no connecting device');
       return ;
@@ -177,21 +185,19 @@ export default class App extends Component {
       console.log('device id is undefined or null');
       return ;
     }
-    const index = _.findIndex(this.state.devices, ['id', id]);
-    if (index < 0) {
+    if (_.findIndex(this.state.devices, ['id', id]) < 0) {
       console.log(`device (${id}) is not in list`);
       return ;
     }
 
-    if (connected) {
-      this.setState({
-        connected: id,
-      });
+    let _state = { connected: id };
+    if (connected && this.state.willConnect) {
+      _state.willConnect = null;
     } else {
-      this.setState({
-        connected: null,
-      });
+      _state.connected = null;
     }
+
+    this.setState(_state);
   }
 }
 
