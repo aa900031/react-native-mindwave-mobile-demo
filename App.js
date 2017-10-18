@@ -17,14 +17,7 @@ import {
 } from 'react-native';
 import MindWaveMobile from 'react-native-mindwave-mobile';
 
-const instructions = Platform.select({
-  ios: 'Press Cmd+R to reload,\n' +
-    'Cmd+D or shake for dev menu',
-  android: 'Double tap R on your keyboard to reload,\n' +
-    'Shake or press menu button for dev menu',
-});
-
-const isMock = true;
+const isMock = false;
 
 export default class App extends Component {
   state = {
@@ -64,7 +57,7 @@ export default class App extends Component {
             {
               this.state.devices.map((device, index) => {
                 const handlePress = () => this.state.connected ? this.handlePressDisconnectDevice() : this.handlePressConnectDevice(device);
-                const message = `裝置 ${device.id} ${this.state.willConnect === device.id ? '[正在連結]' : this.state.connected === device.id ? '[已連結]' : ''}`
+                const message = `裝置 ${device.name || device.id} ${this.state.willConnect === device.id ? '[正在連結]' : this.state.connected === device.id ? '[已連結]' : ''}`
                 return <TouchableOpacity key={index} style={styles.deviceItem} onPress={handlePress} >
                   <Text style={styles.deviceItemTitle} >{message}</Text>
                 </TouchableOpacity>
@@ -105,6 +98,8 @@ export default class App extends Component {
       setTimeout(() => {
         this.handleConnect({ success: true });
       }, 2000);
+    } else {
+      this.mwm.connect(device.id);
     }
   }
 
@@ -122,7 +117,7 @@ export default class App extends Component {
 
   handleConnect = ({ success }) => {
     alert(`連結 ${success ? '成功' : '失敗'}`);
-    if (this.state.willConnect) {
+    if (success === true && this.state.willConnect) {
       this.changeConnectedState(this.state.willConnect, true);
     } else {
       console.log('will connect device is null');
@@ -131,7 +126,7 @@ export default class App extends Component {
 
   handleDisconnect = ({ success }) => {
     alert(`移除連結 ${success ? '成功' : '失敗'}`);
-    if (!this.state.connected) {
+    if (success === true && !this.state.connected) {
       console.log('no connecting device');
       return ;
     }
@@ -140,6 +135,7 @@ export default class App extends Component {
 
   handleFoundDevice = (device) => {
     console.log('on found deviceId ', device.id);
+    console.log(device);
 
     this.pushDevice(device);
   }
@@ -215,9 +211,9 @@ const styles = StyleSheet.create({
   },
   deviceList: {
     flex: 1,
-    paddingTop: 10,
-    paddingRight: 5,
-    paddingLeft: 5,
+    // paddingTop: 10,
+    // paddingRight: 5,
+    // paddingLeft: 5,
   },
   deviceItem: {
     borderWidth: 1,
